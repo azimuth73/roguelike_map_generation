@@ -27,7 +27,8 @@ class GameMap:
         """
         return '\n'.join(''.join('#' if not value else '.' for value in col) for col in self.is_empty_grid.T)
 
-    def print_weights(self) -> str:
+    @property
+    def weights(self) -> str:
         """
         Returns a string representation of the weight_grid
         """
@@ -49,30 +50,31 @@ class GameMap:
         # Set the selected square to True
         self.is_empty_grid[x, y] = True
 
-        # Update weights for adjacent False squares
-        self.update_weights(x, y)
+        self.__update_weights(x, y)
 
-    def update_weights(self, x: int, y: int) -> None:
+    def __update_weights(self, x: int, y: int) -> None:
         """
-        Update weights for adjacent False squares and set the current square's weight to 0
+        Update weights for all adjacent False squares to 1 and set the current square's weight to 0
         """
         self.weight_grid[x, y] = 0
 
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
                 new_x, new_y = x + dx, y + dy
-                if 0 <= new_x < self.weight_grid.shape[0] and 0 <= new_y < self.weight_grid.shape[1] and not self.is_empty_grid[new_x, new_y]:
+                in_bounds_new_x = 0 <= new_x < self.weight_grid.shape[0]
+                in_bounds_new_y = 0 <= new_y < self.weight_grid.shape[1]
+                if in_bounds_new_x and in_bounds_new_y and not self.is_empty_grid[new_x, new_y]:
                     self.weight_grid[new_x, new_y] = 1
 
 
 gm = GameMap(96, 54)
 
 print(gm.is_empty_grid.shape)
-print(gm.print_weights())
+print(gm.weights)
 
 for _ in range(1000):
     gm.dig_next_square()
 
-    print(gm)
+    print(gm.weights)
 
     sleep(0.01)
