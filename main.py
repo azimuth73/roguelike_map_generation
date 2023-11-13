@@ -58,13 +58,16 @@ class GameMap:
         """
         self.weight_grid[x, y] = 0
 
+        weight_delta = 1
+
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
                 new_x, new_y = x + dx, y + dy
-                in_bounds_new_x = 0 <= new_x < self.weight_grid.shape[0]
-                in_bounds_new_y = 0 <= new_y < self.weight_grid.shape[1]
+                in_bounds_new_x = (0 <= new_x < self.weight_grid.shape[0])
+                in_bounds_new_y = (0 <= new_y < self.weight_grid.shape[1])
                 if in_bounds_new_x and in_bounds_new_y and not self.is_empty_grid[new_x, new_y]:
-                    self.weight_grid[new_x, new_y] = 1
+                    self.weight_grid[new_x, new_y] += weight_delta
+                    weight_delta += 1
 
 
 gm = GameMap(96, 54)
@@ -72,9 +75,9 @@ gm = GameMap(96, 54)
 print(gm.is_empty_grid.shape)
 print(gm.weights)
 
-for _ in range(1000):
+for _ in range(96*54//3):
     gm.dig_next_square()
 
-    print(gm.weights)
-
-    sleep(0.01)
+    print(gm)
+    print('|'*96)
+    sleep(0.001)
