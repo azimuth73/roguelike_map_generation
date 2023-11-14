@@ -23,7 +23,7 @@ class WeightDiffusionMapGenerator:
         self.__width, self.__height = width, height
 
         # Initialise the map with one empty space in the middle
-        self.__square_position = Position(self.__width // 2, self.__height // 2)
+        self.__current_position = Position(self.__width // 2, self.__height // 2)
         self.__dig()
 
     def __str__(self) -> str:
@@ -67,7 +67,7 @@ class WeightDiffusionMapGenerator:
 
         return wall_positions
 
-    def __update_square_neighbourhood_weights(self) -> None:
+    def __init_neighbouring_weights(self) -> Set[Position]:
         """
         Sets current square's weight to 0, the square has been dug out and is no longer considered when choosing next
         square
@@ -75,13 +75,30 @@ class WeightDiffusionMapGenerator:
         Initialises weights for adjacent wall squares which could be 'dug out' next (previously 0)
         """
 
-        x, y = self.__square_position.x, self.__square_position.y
+        x, y = self.__current_position.x, self.__current_position.y
 
         self.__weights[x, y] = 0
 
-        for wall_position in self.__neighbouring_wall_positions(x, y):
+        wall_positions = self.__neighbouring_wall_positions(x, y)
+
+        for wall_position in wall_positions:
             if self.__weights[wall_position.x, wall_position.y] == 0:
                 self.__weights[wall_position.x, wall_position.y] = 1
+
+        return wall_positions
+
+    def __set_neighbouring_weights(self, adjacent_walls: Set[Position]) -> None:
+        for adjacent_wall in adjacent_walls:
+            x, y = adjacent_wall.x, adjacent_wall.y
+            walls = self.__neighbouring_wall_positions(x, y)
+            num_walls = len(walls) - 1  # We don't count the current wall
+
+            if num_walls == 2 or num_walls == 7:  # 2,7
+                self.__weights[x, y] = 10
+            elif num_walls == 3 or num_walls == 6:  # 3,6
+                self.__weights[x, y] = 100
+            elif num_walls == 4 or num_walls == 5:  # 4,5
+                self.__weights[x, y] = 1000
 
     def __update_weights(self) -> None:
         """
@@ -89,18 +106,18 @@ class WeightDiffusionMapGenerator:
         algorithm
         """
 
-        self.__update_square_neighbourhood_weights()
+        adjacent_walls = self.__init_neighbouring_weights()
 
-        # TODO: Update the remaining weights according to some algorithm
+        self.__set_neighbouring_weights(adjacent_walls)
 
     def __dig(self) -> None:
         """
         Set the boolean array for the 'dug out' square and call the method to update weights
         """
 
-        pos_x, pos_y = self.__square_position.x, self.__square_position.y
+        x, y = self.__current_position.x, self.__current_position.y
 
-        self.__empty[pos_x, pos_y] = True
+        self.__empty[x, y] = True
 
         self.__update_weights()
 
@@ -118,7 +135,7 @@ class WeightDiffusionMapGenerator:
         # Convert the flattened index to 2D coordinates
         x, y = np.unravel_index(indices=chosen_index, shape=self.__weights.shape, order='F')
 
-        self.__square_position = Position(x, y)
+        self.__current_position = Position(x, y)
 
         self.__dig()
 
@@ -130,10 +147,10 @@ generator = WeightDiffusionMapGenerator(w, h)
 
 print(generator)
 
-for _ in range(1000):
+for _ in range(2000):
     generator.dig_next_square()
 
-    # print(generator)
-    print(generator.weights)
+    print(generator)
+    # print(generator.weights)
     print('|'*w)
     sleep(0)
