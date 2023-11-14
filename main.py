@@ -38,8 +38,20 @@ class WeightDiffusionMapGenerator:
         """
         Returns a string representation of the weights
         """
-
-        return '\n'.join(''.join(str(value) for value in col) for col in self.__weights.T)
+        def symbol(value: int) -> str:
+            if value == 0:
+                return ' '
+            elif value == 1:
+                return 'I'
+            elif value == 10:
+                return 'X'
+            elif value == 100:
+                return 'D'
+            elif value == 1000:
+                return 'M'
+            else:
+                return '?'
+        return '\n'.join(''.join(symbol(value) for value in col) for col in self.__weights.T)
 
     def __neighbouring_wall_positions(self, x: int, y: int) -> Set[Position]:
         wall_positions = set()
@@ -65,22 +77,9 @@ class WeightDiffusionMapGenerator:
 
         x, y = self.__square_position.x, self.__square_position.y
 
-        self.__weights[x, y] = 0  #
+        self.__weights[x, y] = 0
 
-        # For each neighbouring wall which is now 'touching' an empty square, set that wall's weight to 1 from 0
-        # for dx in [-1, 0, 1]:
-        #     for dy in [-1, 0, 1]:
-        #         offset_x, offset_y = x + dx, y + dy
-        #         in_bounds_offset_x = (0 <= offset_x < self.__width)
-        #         in_bounds_offset_y = (0 <= offset_y < self.__height)
-        #         in_bounds = in_bounds_offset_x and in_bounds_offset_y
-        #         if in_bounds and not self.__empty[offset_x, offset_y]:
-        #             if self.__weights[offset_x, offset_y] == 0:
-        #                 self.__weights[offset_x, offset_y] = 1
-
-        wall_positions = self.__neighbouring_wall_positions(x, y)
-
-        for wall_position in wall_positions:
+        for wall_position in self.__neighbouring_wall_positions(x, y):
             if self.__weights[wall_position.x, wall_position.y] == 0:
                 self.__weights[wall_position.x, wall_position.y] = 1
 
