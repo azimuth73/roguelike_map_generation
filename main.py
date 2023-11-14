@@ -1,5 +1,6 @@
 import numpy as np
 from collections import namedtuple
+from typing import Set
 from time import sleep
 
 Position = namedtuple("Position", "x y")
@@ -40,7 +41,21 @@ class WeightDiffusionMapGenerator:
 
         return '\n'.join(''.join(str(value) for value in col) for col in self.__weights.T)
 
-    def __update_square_neighbourhood_weights(self):
+    def __neighbouring_wall_positions(self, x: int, y: int) -> Set[Position]:
+        wall_positions = set()
+
+        for dx in [-1, 0, 1]:
+            for dy in [-1, 0, 1]:
+                offset_x, offset_y = x + dx, y + dy
+                in_bounds_offset_x = (0 <= offset_x < self.__width)
+                in_bounds_offset_y = (0 <= offset_y < self.__height)
+                in_bounds = in_bounds_offset_x and in_bounds_offset_y
+                if in_bounds and not self.__empty[offset_x, offset_y]:
+                    wall_positions.add(Position(offset_x, offset_y))
+
+        return wall_positions
+
+    def __update_square_neighbourhood_weights(self) -> None:
         """
         Sets current square's weight to 0, the square has been dug out and is no longer considered when choosing next
         square
@@ -53,15 +68,21 @@ class WeightDiffusionMapGenerator:
         self.__weights[x, y] = 0  #
 
         # For each neighbouring wall which is now 'touching' an empty square, set that wall's weight to 1 from 0
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                offset_x, offset_y = x + dx, y + dy
-                in_bounds_offset_x = (0 <= offset_x < self.__width)
-                in_bounds_offset_y = (0 <= offset_y < self.__height)
-                in_bounds = in_bounds_offset_x and in_bounds_offset_y
-                if in_bounds and not self.__empty[offset_x, offset_y]:
-                    if self.__weights[offset_x, offset_y] == 0:
-                        self.__weights[offset_x, offset_y] = 1
+        # for dx in [-1, 0, 1]:
+        #     for dy in [-1, 0, 1]:
+        #         offset_x, offset_y = x + dx, y + dy
+        #         in_bounds_offset_x = (0 <= offset_x < self.__width)
+        #         in_bounds_offset_y = (0 <= offset_y < self.__height)
+        #         in_bounds = in_bounds_offset_x and in_bounds_offset_y
+        #         if in_bounds and not self.__empty[offset_x, offset_y]:
+        #             if self.__weights[offset_x, offset_y] == 0:
+        #                 self.__weights[offset_x, offset_y] = 1
+
+        wall_positions = self.__neighbouring_wall_positions(x, y)
+
+        for wall_position in wall_positions:
+            if self.__weights[wall_position.x, wall_position.y] == 0:
+                self.__weights[wall_position.x, wall_position.y] = 1
 
     def __update_weights(self) -> None:
         """
@@ -73,7 +94,7 @@ class WeightDiffusionMapGenerator:
 
         # TODO: Update the remaining weights according to some algorithm
 
-    def __dig(self):
+    def __dig(self) -> None:
         """
         Set the boolean array for the 'dug out' square and call the method to update weights
         """
@@ -103,10 +124,10 @@ class WeightDiffusionMapGenerator:
         self.__dig()
 
 
-width = 272
-height = 71
+w = 272
+h = 71
 
-generator = WeightDiffusionMapGenerator(width, height)
+generator = WeightDiffusionMapGenerator(w, h)
 
 print(generator)
 
@@ -115,5 +136,5 @@ for _ in range(1000):
 
     # print(generator)
     print(generator.weights)
-    print('|'*width)
+    print('|'*w)
     sleep(0)
