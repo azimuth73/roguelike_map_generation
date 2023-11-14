@@ -38,7 +38,7 @@ class WeightDiffusionMapGenerator:
         Returns a string representation of the weights
         """
 
-        return '\n'.join(' '.join(str(value) for value in col) for col in self.__weights.T)
+        return '\n'.join(''.join(str(value) for value in col) for col in self.__weights.T)
 
     def __update_square_neighbourhood_weights(self):
         """
@@ -56,8 +56,8 @@ class WeightDiffusionMapGenerator:
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
                 offset_x, offset_y = x + dx, y + dy
-                in_bounds_offset_x = (0 <= offset_x < self.__weights.shape[0])
-                in_bounds_offset_y = (0 <= offset_y < self.__weights.shape[1])
+                in_bounds_offset_x = (0 <= offset_x < self.__width)
+                in_bounds_offset_y = (0 <= offset_y < self.__height)
                 in_bounds = in_bounds_offset_x and in_bounds_offset_y
                 if in_bounds and not self.__empty[offset_x, offset_y]:
                     if self.__weights[offset_x, offset_y] == 0:
@@ -103,13 +103,17 @@ class WeightDiffusionMapGenerator:
         self.__dig()
 
 
-generator = WeightDiffusionMapGenerator(96, 54)
+width = 272
+height = 71
+
+generator = WeightDiffusionMapGenerator(width, height)
 
 print(generator)
 
-for _ in range(2500):
+for _ in range(1000):
     generator.dig_next_square()
 
-    print(generator)
-    print('|'*96)
-    sleep(0.001)
+    # print(generator)
+    print(generator.weights)
+    print('|'*width)
+    sleep(0)
