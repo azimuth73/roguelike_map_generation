@@ -1,5 +1,8 @@
 import numpy as np
+from collections import namedtuple
 from time import sleep
+
+Position = namedtuple("Position", "x y")
 
 
 class WeightDiffusionMapGenerator:
@@ -18,24 +21,33 @@ class WeightDiffusionMapGenerator:
         # The width and height are stored for a more convenient access
         self.__width, self.__height = width, height
 
-        self.__init_middle_slice()
+        self.__square_position = Position(self.__width // 2, self.__height // 2)
+        self.__dig()
 
-    def __init_middle_slice(self):
-        """
-        Set the middle 2x2 slice of is_empty_grid to True and set the weights of the square "ring" around the Trues to 1
-        """
-        start_x = self.__width // 2 - 1
-        end_x = start_x + 2
+    def __dig(self):
 
-        start_y = self.__height // 2 - 1
-        end_y = start_y + 2
+        pos_x, pos_y = self.__square_position.x, self.__square_position.y
 
-        self.__empty[start_x:end_x, start_y:end_y] = True
+        self.__empty[pos_x, pos_y] = True
 
-        for x in range(start_x - 1, end_x + 1):
-            for y in range(start_y - 1, end_y + 1):
-                if not (start_x <= x < end_x and start_y <= y < end_y):
-                    self.__weights[x, y] = 1
+        self.__update_weights(pos_x, pos_y)
+
+    def __update_square_neighbourhood_weights(self):
+
+        x, y = self.__square_position.x, self.__square_position.y
+
+        self.__weights[x, y] = 0  # The square has been dug out and is no longer considered when choosing next square
+
+        # For each neighbouring wall which is now 'touching' an empty square, set that wall's weight to 1 from 0
+        for dx in [-1, 0, 1]:
+            for dy in [-1, 0, 1]:
+                offset_x, offset_y = x + dx, y + dy
+                in_bounds_offset_x = (0 <= offset_x < self.__weights.shape[0])
+                in_bounds_offset_y = (0 <= offset_y < self.__weights.shape[1])
+                in_bounds = in_bounds_offset_x and in_bounds_offset_y
+                if in_bounds and not self.__empty[offset_x, offset_y]:
+                    if self.__weights[offset_x, offset_y] == 0:
+                        self.__weights[offset_x, offset_y] = 1
 
     def __str__(self) -> str:
         """
@@ -61,12 +73,11 @@ class WeightDiffusionMapGenerator:
         chosen_index = np.random.choice(np.arange(len(flattened_weights)), p=flattened_weights)
 
         # Convert the flattened index to 2D coordinates
-        x, y = np.unravel_index(chosen_index, self.__weights.shape, order='F')
+        x, y = np.unravel_index(indices=chosen_index, shape=self.__weights.shape, order='F')
 
-        # Set the selected square to True
-        self.__empty[x, y] = True
+        self.__square_position = Position(x, y)
 
-        self.__update_weights(x, y)
+        self.__dig()
 
     def __update_weights(self, x: int, y: int) -> None:
         """
@@ -76,16 +87,7 @@ class WeightDiffusionMapGenerator:
 
         Update the remaining weights according to some algorithm
         """
-        self.__weights[x, y] = 0
-
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                offset_x, offset_y = x + dx, y + dy
-                in_bounds_new_x = (0 <= offset_x < self.__weights.shape[0])
-                in_bounds_new_y = (0 <= offset_y < self.__weights.shape[1])
-                if in_bounds_new_x and in_bounds_new_y and not self.__empty[offset_x, offset_y]:
-                    if self.__weights[offset_x, offset_y] == 0:
-                        self.__weights[offset_x, offset_y] = 1
+        self.__update_square_neighbourhood_weights()
 
 
 generator = WeightDiffusionMapGenerator(96, 54)
