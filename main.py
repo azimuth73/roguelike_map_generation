@@ -24,13 +24,18 @@ class WeightDiffusionMapGenerator:
         self.__square_position = Position(self.__width // 2, self.__height // 2)
         self.__dig()
 
-    def __dig(self):
+    def __str__(self) -> str:
+        """
+        Returns a string representation of the GameMap, using '#' for False and '.' for True
+        """
+        return '\n'.join(''.join('#' if not value else '.' for value in col) for col in self.__empty.T)
 
-        pos_x, pos_y = self.__square_position.x, self.__square_position.y
-
-        self.__empty[pos_x, pos_y] = True
-
-        self.__update_weights(pos_x, pos_y)
+    @property
+    def weights(self) -> str:
+        """
+        Returns a string representation of the weight_grid
+        """
+        return '\n'.join(' '.join(str(value) for value in col) for col in self.__weights.T)
 
     def __update_square_neighbourhood_weights(self):
 
@@ -49,18 +54,23 @@ class WeightDiffusionMapGenerator:
                     if self.__weights[offset_x, offset_y] == 0:
                         self.__weights[offset_x, offset_y] = 1
 
-    def __str__(self) -> str:
+    def __update_weights(self) -> None:
         """
-        Returns a string representation of the GameMap, using '#' for False and '.' for True
-        """
-        return '\n'.join(''.join('#' if not value else '.' for value in col) for col in self.__empty.T)
+        Sets current square's weight to 0
 
-    @property
-    def weights(self) -> str:
+        Initialises weights for adjacent wall squares which could be 'dug out' next (previously 0)
+
+        Update the remaining weights according to some algorithm
         """
-        Returns a string representation of the weight_grid
-        """
-        return '\n'.join(' '.join(str(value) for value in col) for col in self.__weights.T)
+        self.__update_square_neighbourhood_weights()
+
+    def __dig(self):
+
+        pos_x, pos_y = self.__square_position.x, self.__square_position.y
+
+        self.__empty[pos_x, pos_y] = True
+
+        self.__update_weights()
 
     def dig_next_square(self) -> None:
         """
@@ -79,22 +89,12 @@ class WeightDiffusionMapGenerator:
 
         self.__dig()
 
-    def __update_weights(self, x: int, y: int) -> None:
-        """
-        Sets current square's weight to 0
-
-        Initialises weights for adjacent wall squares which could be 'dug out' next (previously 0)
-
-        Update the remaining weights according to some algorithm
-        """
-        self.__update_square_neighbourhood_weights()
-
 
 generator = WeightDiffusionMapGenerator(96, 54)
 
 print(generator)
 
-for _ in range(1500):
+for _ in range(2500):
     generator.dig_next_square()
 
     print(generator)
