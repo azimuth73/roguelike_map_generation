@@ -1,6 +1,5 @@
-from time import sleep
-
 import numpy as np
+from time import sleep
 
 
 class WeightDiffusionMapGenerator:
@@ -53,7 +52,7 @@ class WeightDiffusionMapGenerator:
 
     def dig_next_square(self) -> None:
         """
-        Randomly selects a square based on weights, sets it to True, and updates weights for adjacent False squares
+        Randomly selects a wall square based on weights and 'digs it out' and
         """
         flattened_weights = self.__weights.flatten(order='F').astype(float)
         flattened_weights /= flattened_weights.sum()  # Normalize weights to probabilities
@@ -71,7 +70,11 @@ class WeightDiffusionMapGenerator:
 
     def __update_weights(self, x: int, y: int) -> None:
         """
-        Update weights for all adjacent False squares to 1 and set the current square's weight to 0
+        Sets current square's weight to 0
+
+        Initialises weights for adjacent wall squares which could be 'dug out' next (previously 0)
+
+        Update the remaining weights according to some algorithm
         """
         self.__weights[x, y] = 0
 
@@ -83,7 +86,6 @@ class WeightDiffusionMapGenerator:
                 if in_bounds_new_x and in_bounds_new_y and not self.__empty[offset_x, offset_y]:
                     if self.__weights[offset_x, offset_y] == 0:
                         self.__weights[offset_x, offset_y] = 1
-
 
 
 generator = WeightDiffusionMapGenerator(96, 54)
